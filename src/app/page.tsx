@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -22,6 +23,7 @@ import { RecommendationsSidebar } from "@/components/recommendations-sidebar";
 import { PropertyDetailsPopup } from "@/components/property-details-popup";
 
 export default function HomePage() {
+  const searchParams = useSearchParams();
   const [inputValue, setInputValue] = useState("");
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [showChatSidebar, setShowChatSidebar] = useState(false);
@@ -39,26 +41,100 @@ export default function HomePage() {
   const [isPropertyPopupOpen, setIsPropertyPopupOpen] = useState(false);
   const chatRef = useRef<any>(null);
 
-  // Check for existing state when component mounts
+  // Check for chat ID from URL or existing state when component mounts
   useEffect(() => {
-    const savedState = localStorage.getItem('repilot-home-state');
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-        if (state.showChatSidebar) {
-          setShowChatSidebar(true);
+    const chatId = searchParams.get('chatId');
+    
+    if (chatId) {
+      // Load chat from history
+      loadChatFromHistory(chatId);
+    } else {
+      // Check for existing state
+      const savedState = localStorage.getItem('repilot-home-state');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          if (state.showChatSidebar) {
+            setShowChatSidebar(true);
+          }
+          if (state.searchQuery) {
+            setSearchQuery(state.searchQuery);
+          }
+          if (state.properties && state.properties.length > 0) {
+            setProperties(state.properties);
+          }
+        } catch (error) {
+          console.error('Error loading saved state:', error);
         }
-        if (state.searchQuery) {
-          setSearchQuery(state.searchQuery);
-        }
-        if (state.properties && state.properties.length > 0) {
-          setProperties(state.properties);
-        }
-      } catch (error) {
-        console.error('Error loading saved state:', error);
       }
     }
-  }, []);
+  }, [searchParams]);
+
+  // Function to load chat from history
+  const loadChatFromHistory = (chatId: string) => {
+    // Mock data for different chat sessions
+    const chatHistoryData: Record<string, any> = {
+      "chat-1": {
+        messages: [
+          {
+            id: "msg-1",
+            text: "Looking for a detached house in Richmond Hill, preferably in Bayview Secondary zone, and easy access to Hwy 404.",
+            sender: "user",
+            timestamp: new Date("2024-01-16T14:00:00")
+          },
+          {
+            id: "msg-2",
+            text: "Nice choice. What's your approximate budget and how many rooms do you need?",
+            sender: "ai",
+            timestamp: new Date("2024-01-16T14:00:30")
+          },
+          {
+            id: "msg-3",
+            text: "Around $1.2M, 3 bedrooms.",
+            sender: "user",
+            timestamp: new Date("2024-01-16T14:01:00")
+          },
+          {
+            id: "msg-4",
+            text: "Got it. Here are some initial recommendations.",
+            sender: "ai",
+            timestamp: new Date("2024-01-16T14:01:30"),
+            type: "recommendations",
+            propertySet: "richmond-detached"
+          }
+        ],
+        properties: richmondHillDetachedHomes,
+        propertySet: "richmond-detached"
+      },
+      "chat-2": {
+        messages: [
+          {
+            id: "msg-1",
+            text: "Hi! I'm a first-time homebuyer and I'm feeling overwhelmed by the whole process.",
+            sender: "user",
+            timestamp: new Date("2024-01-15T10:00:00")
+          },
+          {
+            id: "msg-2",
+            text: "I completely understand! Let me guide you through this step by step.\n\nFirst, what's your budget range? This helps me narrow down the best options for you.",
+            sender: "ai",
+            timestamp: new Date("2024-01-15T10:00:30")
+          }
+        ],
+        properties: mockProperties,
+        propertySet: "default"
+      }
+    };
+
+    const chatData = chatHistoryData[chatId];
+    if (chatData) {
+      setChatMessages(chatData.messages);
+      setProperties(chatData.properties);
+      setPropertySet(chatData.propertySet);
+      setIsInChatMode(true);
+      setShowRecommendations(true);
+    }
+  };
 
   const quickActions = [
     { 
@@ -588,6 +664,16 @@ export default function HomePage() {
     setSelectedPropertyId(null);
   };
 
+  const handleAskAI = (propertyTitle: string) => {
+    // Set the input value to include the property mention
+    setInputValue(`@${propertyTitle} `);
+    
+    // If not in chat mode yet, enter it
+    if (!isInChatMode) {
+      setIsInChatMode(true);
+    }
+  };
+
   const handleWatchlistToggle = (propertyId: string) => {
     setProperties(prev => 
       prev.map(property => 
@@ -897,6 +983,7 @@ export default function HomePage() {
               onWatchlistToggle={handleWatchlistToggle}
               onRemoveProperty={handleRemoveProperty}
               onPropertyClick={handlePropertyClick}
+              onAskAI={handleAskAI}
             />
           </div>
         </>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Heart, Eye, MapPin, Bed, Bath, Square, Grid3X3, Map, XCircle, Star } from "lucide-react";
+import { X, Heart, Eye, MapPin, Bed, Bath, Square, Grid3X3, Map, XCircle, Star, Sparkles } from "lucide-react";
 
 interface Property {
   id: string;
@@ -24,6 +24,7 @@ interface RecommendationsSidebarProps {
   onWatchlistToggle: (propertyId: string) => void;
   onRemoveProperty: (propertyId: string) => void;
   onPropertyClick: (propertyId: string) => void;
+  onAskAI?: (propertyTitle: string) => void;
 }
 
 export function RecommendationsSidebar({ 
@@ -31,7 +32,8 @@ export function RecommendationsSidebar({
   onClose, 
   onWatchlistToggle, 
   onRemoveProperty,
-  onPropertyClick
+  onPropertyClick,
+  onAskAI
 }: RecommendationsSidebarProps) {
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -130,19 +132,28 @@ export function RecommendationsSidebar({
                   
                   <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{property.aiReason}</p>
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => onWatchlistToggle(property.id)}
-                      className="text-xs h-7 px-2"
+                      className="text-xs h-7 px-2 flex-1"
                     >
                       <Heart className={`w-3 h-3 mr-1 ${property.isWatched ? 'fill-red-500 text-red-500' : ''}`} />
                       {property.isWatched ? 'Saved' : 'Save'}
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onAskAI?.(property.title)}
+                      className="text-xs h-7 px-2 flex-1"
+                    >
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Ask AI
+                    </Button>
                     <Button 
                       size="sm" 
-                      className="text-xs h-7 px-2"
+                      className="text-xs h-7 px-2 flex-1"
                       onClick={() => onPropertyClick(property.id)}
                     >
                       <Eye className="w-3 h-3 mr-1" />
@@ -267,12 +278,12 @@ export function RecommendationsSidebar({
                           </div>
                           
                           {/* Action Buttons */}
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => onWatchlistToggle(selectedProperty.id)}
-                              className={`text-xs h-8 px-3 rounded-full border-2 transition-all ${
+                              className={`text-xs h-8 px-3 rounded-full border-2 transition-all flex-1 ${
                                 selectedProperty.isWatched 
                                   ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100' 
                                   : 'border-gray-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
@@ -281,13 +292,22 @@ export function RecommendationsSidebar({
                               <Heart className={`w-3 h-3 mr-1.5 ${selectedProperty.isWatched ? 'fill-current' : ''}`} />
                               {selectedProperty.isWatched ? 'Saved' : 'Save'}
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onAskAI?.(selectedProperty.title)}
+                              className="text-xs h-8 px-3 rounded-full border-2 border-gray-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 transition-all flex-1"
+                            >
+                              <Sparkles className="w-3 h-3 mr-1.5" />
+                              Ask AI
+                            </Button>
                             <Button 
                               size="sm" 
-                              className="text-xs h-8 px-4 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md transition-all hover:shadow-lg"
+                              className="text-xs h-8 px-4 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md transition-all hover:shadow-lg flex-1"
                               onClick={() => onPropertyClick(selectedProperty.id)}
                             >
                               <Eye className="w-3 h-3 mr-1.5" />
-                              View Details
+                              View
                             </Button>
                           </div>
                         </div>

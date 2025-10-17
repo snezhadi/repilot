@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Heart, MessageSquare, Eye, User, Settings, LogOut } from 'lucide-react';
+import { Home, History, Heart, MessageSquare, Eye, User, Settings, LogOut } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -18,7 +18,7 @@ import Link from "next/link";
 
 interface CustomSidebarProps {
   className?: string;
-  activePage?: 'home' | 'watchlist' | 'showings' | 'messaging' | 'profile';
+  activePage?: 'home' | 'chat-history' | 'watchlist' | 'showings' | 'messaging' | 'profile';
   onHomeClick?: () => void;
 }
 
@@ -26,6 +26,7 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const menuItems = [
     { icon: Home, label: 'Home', isActive: activePage === 'home' },
+    { icon: History, label: 'Chat History', isActive: activePage === 'chat-history' },
     { icon: Heart, label: 'Watchlist', isActive: activePage === 'watchlist' },
     { icon: Eye, label: 'Showings', isActive: activePage === 'showings' },
     { icon: MessageSquare, label: 'Messaging', isActive: activePage === 'messaging' },
@@ -45,6 +46,20 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
                       onHomeClick();
                     }
                   }}>
+                    <button
+                      className={`
+                        w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
+                        ${item.isActive 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }
+                      `}
+                    >
+                      <item.icon className="w-6 h-6" />
+                    </button>
+                  </Link>
+                ) : item.label === 'Chat History' ? (
+                  <Link href="/chat-history">
                     <button
                       className={`
                         w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
