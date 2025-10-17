@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bot, User, Mic, Send, ArrowLeft, Home, Eye } from "lucide-react";
+import { Bot, User, Mic, Send, ArrowLeft, Home, Eye, X } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -14,6 +14,20 @@ interface Message {
   timestamp: Date;
   type?: "text" | "thinking" | "recommendations" | "price-chart" | "showing-slots" | "showing-confirmed";
   propertySet?: "default" | "richmond-detached" | "richmond-townhouses";
+}
+
+interface Property {
+  id: string;
+  title: string;
+  price: string;
+  location: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  image: string;
+  matchScore: number;
+  aiReason: string;
+  isWatched: boolean;
 }
 
 interface FullscreenChatInterfaceProps {
@@ -27,6 +41,8 @@ interface FullscreenChatInterfaceProps {
   isSimulating?: boolean;
   onShowRecommendations?: () => void;
   onRecommendationClick?: (propertySet?: "default" | "richmond-detached" | "richmond-townhouses") => void;
+  recommendedProperties?: Property[];
+  onPropertyClick?: (propertyId: string) => void;
 }
 
 export function FullscreenChatInterface({ 
@@ -39,21 +55,151 @@ export function FullscreenChatInterface({
   onVoiceToggle,
   isSimulating = false,
   onShowRecommendations,
-  onRecommendationClick
+  onRecommendationClick,
+  recommendedProperties = [],
+  onPropertyClick
 }: FullscreenChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [localInput, setLocalInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showMentionMenu, setShowMentionMenu] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
+  const [mentionMenuPosition, setMentionMenuPosition] = useState({ top: 0, left: 0 });
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+  const [mentionedProperties, setMentionedProperties] = useState<Set<string>>(new Set());
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Handle @ mentions
+  const handleInputChange = (value: string) => {
+    onInputChange(value);
+    
+    // Check if user typed @
+    const cursorPosition = textareaRef.current?.selectionStart || 0;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (atIndex !== -1 && recommendedProperties.length > 0) {
+      const searchTerm = textBeforeCursor.substring(atIndex + 1);
+      
+      // Only show menu if @ is at start or after a space
+      const charBeforeAt = atIndex > 0 ? textBeforeCursor[atIndex - 1] : ' ';
+      if (charBeforeAt === ' ' || atIndex === 0) {
+        setMentionSearch(searchTerm.toLowerCase());
+        setShowMentionMenu(true);
+        setSelectedMentionIndex(0);
+        
+        // Calculate menu position
+        const textarea = textareaRef.current;
+        if (textarea) {
+          const rect = textarea.getBoundingClientRect();
+          setMentionMenuPosition({
+            top: rect.top - 10,
+            left: rect.left
+          });
+        }
+      }
+    } else {
+      setShowMentionMenu(false);
+    }
+  };
+
+  // Filter properties based on search
+  const filteredProperties = recommendedProperties.filter(p => 
+    p.title.toLowerCase().includes(mentionSearch) || 
+    p.location.toLowerCase().includes(mentionSearch)
+  );
+
+  // Handle property selection from mention menu
+  const handlePropertySelect = (property: Property) => {
+    const cursorPosition = textareaRef.current?.selectionStart || 0;
+    const textBeforeCursor = inputValue.substring(0, cursorPosition);
+    const textAfterCursor = inputValue.substring(cursorPosition);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    
+    const beforeMention = inputValue.substring(0, atIndex);
+    const newValue = beforeMention + `@${property.title}` + textAfterCursor;
+    
+    onInputChange(newValue);
+    setShowMentionMenu(false);
+    setMentionedProperties(prev => new Set([...prev, property.id]));
+    
+    // Focus back on textarea
+    textareaRef.current?.focus();
+  };
+
+  // Handle keyboard navigation in mention menu
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showMentionMenu && filteredProperties.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => 
+          prev < filteredProperties.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => prev > 0 ? prev - 1 : prev);
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        handlePropertySelect(filteredProperties[selectedMentionIndex]);
+      } else if (e.key === 'Escape') {
+        setShowMentionMenu(false);
+      }
+    }
+  };
+
+  // Remove a mentioned property
+  const handleRemoveMention = (propertyTitle: string) => {
+    const newValue = inputValue.replace(`@${propertyTitle}`, '');
+    onInputChange(newValue);
+  };
+
+  // Parse message text to find mentions
+  const renderMessageWithMentions = (text: string) => {
+    const mentionRegex = /@([^@\s]+(?:\s+[^@\s]+)*)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      // Add text before mention
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      
+      // Add mention as a clickable badge
+      const mentionText = match[1];
+      const property = recommendedProperties.find(p => p.title === mentionText);
+      
+      parts.push(
+        <span
+          key={match.index}
+          className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-200 text-gray-800 rounded-md text-sm cursor-pointer hover:bg-gray-300"
+          onClick={() => property && onPropertyClick?.(property.id)}
+        >
+          @{mentionText}
+        </span>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.length > 0 ? parts : text;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
       onSendMessage(inputValue);
       onInputChange("");
+      setMentionedProperties(new Set());
     }
   };
 
@@ -250,7 +396,11 @@ export function FullscreenChatInterface({
                     </div>
                   ) : (
                     <div className="text-sm break-words prose prose-sm max-w-none [&_p]:mb-3 [&_ul]:mb-3 [&_li]:mb-1 [&_table]:border-collapse [&_table]:w-full [&_th]:border [&_th]:border-gray-300 [&_th]:px-3 [&_th]:py-2 [&_th]:bg-gray-50 [&_th]:text-left [&_th]:font-semibold [&_td]:border [&_td]:border-gray-300 [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+                      {message.text.includes('@') && message.sender === "user" ? (
+                        <div>{renderMessageWithMentions(message.text)}</div>
+                      ) : (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+                      )}
                     </div>
                   )}
                   <p className="text-xs opacity-70 mt-1">
@@ -267,13 +417,50 @@ export function FullscreenChatInterface({
       </div>
 
       {/* Input */}
-      <div className="border-t border-border p-4 bg-background flex-shrink-0">
+      <div className="border-t border-border p-4 bg-background flex-shrink-0 relative">
+        {/* Mention Menu */}
+        {showMentionMenu && filteredProperties.length > 0 && (
+          <div 
+            className="absolute bottom-full mb-2 left-4 right-20 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
+            style={{ maxWidth: '600px' }}
+          >
+            <div className="p-2">
+              <div className="text-xs text-gray-500 px-2 py-1 font-medium">
+                Select a property to mention:
+              </div>
+              {filteredProperties.map((property, index) => (
+                <button
+                  key={property.id}
+                  type="button"
+                  onClick={() => handlePropertySelect(property)}
+                  className={`w-full flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition-colors ${
+                    index === selectedMentionIndex ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <img 
+                    src={property.image} 
+                    alt={property.title}
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                  <div className="flex-1 text-left">
+                    <div className="text-sm font-medium text-gray-900">{property.title}</div>
+                    <div className="text-xs text-gray-500">{property.location}</div>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">{property.price}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex items-end space-x-3">
           <div className="flex-1">
             <textarea
+              ref={textareaRef}
               value={inputValue}
-              onChange={(e) => onInputChange(e.target.value)}
-              placeholder="Ask me about properties..."
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask me about properties... (use @ to mention properties)"
               className="w-full min-h-[60px] max-h-32 p-3 border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm"
               rows={2}
             />

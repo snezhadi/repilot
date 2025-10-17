@@ -73,7 +73,8 @@ export default function HomePage() {
         "Yeah, show me townhouses.",
         "Before I decide, can you compare townhouse and detached homes in terms of prices over time?",
         "Makes sense. Let's visit 88 Bantry Ave #5.",
-        "12:30 works."
+        "12:30 works.",
+        "Can you compare @Stunning Detached Home - Bayview Area to @Elegant Townhouse - Bayview Zone?"
       ]
     },
     { 
@@ -469,6 +470,8 @@ export default function HomePage() {
       responses.push("Added to your showing list!");
     } else if (userMessage.toLowerCase().includes("12:30 works")) {
       responses.push("Perfect — showing confirmed for 12:30 PM.");
+    } else if (userMessage.includes("@") && (userMessage.toLowerCase().includes("compare") || userMessage.toLowerCase().includes("comparison"))) {
+      responses.push("Great question! Here's a detailed comparison of these two properties:\n\n| Feature | Stunning Detached Home - Bayview Area | Elegant Townhouse - Bayview Zone |\n|---------|---------------------------------------|-----------------------------------|\n| **Price** | $1,450,000 | $980,000 |\n| **Type** | Detached | Townhouse |\n| **Bedrooms** | 4 | 3 |\n| **Bathrooms** | 3 | 2 |\n| **Square Feet** | 3,200 sq ft | 2,100 sq ft |\n| **Lot Size** | 50' x 120' | 25' x 100' |\n| **Property Tax (Annual)** | ~$8,700 | ~$5,900 |\n| **Maintenance** | Full responsibility | Shared (condo fees: $350/mo) |\n| **Parking** | 2-car garage + driveway | 2-car garage |\n| **Outdoor Space** | Large backyard | Small patio |\n| **Price/sq ft** | $453 | $467 |\n| **School Distance** | 5-min drive | 5-min drive |\n| **Hwy 404 Access** | 5-min drive | 6-min drive |\n| **Appreciation (5yr)** | Higher potential (+24%) | Moderate (+22%) |\n| **Rental Potential** | $3,800-4,200/mo | $2,800-3,100/mo |\n| **Resale Demand** | Very High | High |\n\n**Key Takeaways:**\n• The detached home costs $470K more but offers 1,100 sq ft extra space\n• Townhouse has lower property tax and ongoing costs\n• Both have excellent school access and highway proximity\n• Detached home has stronger appreciation and rental potential\n• Townhouse requires less maintenance with condo fees included");
     }
     // Original conversation scripts
     else if (userMessage.toLowerCase().includes("first-time") || userMessage.toLowerCase().includes("overwhelmed")) {
@@ -809,6 +812,8 @@ export default function HomePage() {
               onVoiceToggle={handleVoiceToggle}
               isSimulating={isSimulating}
               onRecommendationClick={handleRecommendationClick}
+              recommendedProperties={properties}
+              onPropertyClick={handlePropertyClick}
             />
           ) : (
             /* Search Interface */
