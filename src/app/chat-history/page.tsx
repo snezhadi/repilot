@@ -11,7 +11,6 @@ import {
   MessageSquare, 
   Calendar, 
   Trash2,
-  Filter,
   ChevronRight
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -243,7 +242,7 @@ export default function ChatHistoryPage() {
                     {/* Preview */}
                     <div className="mb-2">
                       <p className="text-xs text-muted-foreground italic line-clamp-1">
-                        "{chat.preview}"
+                        &ldquo;{chat.preview}&rdquo;
                       </p>
                     </div>
 

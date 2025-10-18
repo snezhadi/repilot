@@ -253,7 +253,7 @@ export function ShowingHistoryModal({ property, isOpen, onClose }: ShowingHistor
                           <span className="text-sm font-medium">
                             {item.author === 'user' ? 'You' : 'AI Agent'}
                           </span>
-                          {item.itemType === 'comment' && (item as any).isVoice && (
+                          {item.itemType === 'comment' && 'isVoice' in item && item.isVoice && (
                             <Badge variant="secondary" className="text-xs">
                               <Mic className="w-3 h-3 mr-1" />
                               Voice

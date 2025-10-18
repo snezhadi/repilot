@@ -93,7 +93,7 @@ export default function WatchlistPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold">My Watchlist</h1>
-                <p className="text-muted-foreground">Properties you've saved and provided feedback on</p>
+                <p className="text-muted-foreground">Properties you&apos;ve saved and provided feedback on</p>
               </div>
               <Badge variant="secondary" className="text-sm">
                 {watchedProperties.length} Properties

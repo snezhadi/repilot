@@ -56,7 +56,7 @@ export function SimulationChatInterface({ onClose, messages, isSimulating = fals
               </Avatar>
               <Card className="bg-background max-w-full !py-3 border-0">
                 <CardContent className="!px-3 !py-0">
-                  <p className="text-sm">Hi! I'm your AI real estate agent. I can help you find the perfect property. What are you looking for?</p>
+                  <p className="text-sm">Hi! I&apos;m your AI real estate agent. I can help you find the perfect property. What are you looking for?</p>
                   <p className="text-xs opacity-70 mt-1">
                     {new Date().toLocaleTimeString()}
                   </p>

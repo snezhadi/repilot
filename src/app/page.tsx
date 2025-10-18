@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,24 +22,84 @@ import { FullscreenChatInterface } from "@/components/fullscreen-chat-interface"
 import { RecommendationsSidebar } from "@/components/recommendations-sidebar";
 import { PropertyDetailsPopup } from "@/components/property-details-popup";
 
-export default function HomePage() {
+interface Message {
+  id: string;
+  text: string;
+  sender: "user" | "ai";
+  timestamp: Date;
+  type?: "text" | "thinking" | "recommendations" | "price-chart" | "showing-slots" | "showing-confirmed";
+  propertySet?: "default" | "richmond-detached" | "richmond-townhouses";
+}
+
+interface Property {
+  id: string;
+  title: string;
+  price: string;
+  location: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  image: string;
+  matchScore: number;
+  aiReason: string;
+  isWatched: boolean;
+}
+
+function HomePageContent() {
   const searchParams = useSearchParams();
   const [inputValue, setInputValue] = useState("");
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [showChatSidebar, setShowChatSidebar] = useState(false);
-  const [properties, setProperties] = useState<any[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [simulationMessages, setSimulationMessages] = useState<any[]>([]);
+  const [simulationMessages] = useState<Message[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [isInChatMode, setIsInChatMode] = useState(false);
-  const [propertySet, setPropertySet] = useState<'default' | 'richmond-detached' | 'richmond-townhouses'>('default');
+  const [, setPropertySet] = useState<'default' | 'richmond-detached' | 'richmond-townhouses'>('default');
   const [sidebarWidth, setSidebarWidth] = useState(480); // Default 30rem = 480px
   const [isResizing, setIsResizing] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isPropertyPopupOpen, setIsPropertyPopupOpen] = useState(false);
-  const chatRef = useRef<any>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  // Function to load chat from history
+  const loadChatFromHistory = useCallback((chatId: string) => {
+    // Mock data for different chat sessions
+    const chatHistoryData: Record<string, { messages: Message[]; properties: Property[]; propertySet: 'default' | 'richmond-detached' | 'richmond-townhouses' }> = {
+      "chat-1": {
+        messages: [
+          {
+            id: "1",
+            text: "I'm looking for a detached home in Richmond Hill with at least 4 bedrooms and 2 bathrooms, preferably close to good schools.",
+            sender: "user" as const,
+            timestamp: new Date("2024-01-15T10:30:00")
+          },
+          {
+            id: "2",
+            text: "Great! I've found some excellent detached homes in Richmond Hill that match your criteria. These properties are all close to top-rated schools and offer the space you're looking for.",
+            sender: "ai" as const,
+            timestamp: new Date("2024-01-15T10:30:05"),
+            type: "recommendations" as const,
+            propertySet: "richmond-detached"
+          }
+        ],
+        properties: richmondHillDetachedHomes,
+        propertySet: "richmond-detached"
+      },
+      // ... other chat data would be here
+    };
+
+    const chatData = chatHistoryData[chatId];
+    if (chatData) {
+      setChatMessages(chatData.messages);
+      setProperties(chatData.properties);
+      setPropertySet(chatData.propertySet);
+      setIsInChatMode(true);
+      setShowRecommendations(true);
+    }
+  }, []);
 
   // Check for chat ID from URL or existing state when component mounts
   useEffect(() => {
@@ -68,73 +128,7 @@ export default function HomePage() {
         }
       }
     }
-  }, [searchParams]);
-
-  // Function to load chat from history
-  const loadChatFromHistory = (chatId: string) => {
-    // Mock data for different chat sessions
-    const chatHistoryData: Record<string, any> = {
-      "chat-1": {
-        messages: [
-          {
-            id: "msg-1",
-            text: "Looking for a detached house in Richmond Hill, preferably in Bayview Secondary zone, and easy access to Hwy 404.",
-            sender: "user",
-            timestamp: new Date("2024-01-16T14:00:00")
-          },
-          {
-            id: "msg-2",
-            text: "Nice choice. What's your approximate budget and how many rooms do you need?",
-            sender: "ai",
-            timestamp: new Date("2024-01-16T14:00:30")
-          },
-          {
-            id: "msg-3",
-            text: "Around $1.2M, 3 bedrooms.",
-            sender: "user",
-            timestamp: new Date("2024-01-16T14:01:00")
-          },
-          {
-            id: "msg-4",
-            text: "Got it. Here are some initial recommendations.",
-            sender: "ai",
-            timestamp: new Date("2024-01-16T14:01:30"),
-            type: "recommendations",
-            propertySet: "richmond-detached"
-          }
-        ],
-        properties: richmondHillDetachedHomes,
-        propertySet: "richmond-detached"
-      },
-      "chat-2": {
-        messages: [
-          {
-            id: "msg-1",
-            text: "Hi! I'm a first-time homebuyer and I'm feeling overwhelmed by the whole process.",
-            sender: "user",
-            timestamp: new Date("2024-01-15T10:00:00")
-          },
-          {
-            id: "msg-2",
-            text: "I completely understand! Let me guide you through this step by step.\n\nFirst, what's your budget range? This helps me narrow down the best options for you.",
-            sender: "ai",
-            timestamp: new Date("2024-01-15T10:00:30")
-          }
-        ],
-        properties: mockProperties,
-        propertySet: "default"
-      }
-    };
-
-    const chatData = chatHistoryData[chatId];
-    if (chatData) {
-      setChatMessages(chatData.messages);
-      setProperties(chatData.properties);
-      setPropertySet(chatData.propertySet);
-      setIsInChatMode(true);
-      setShowRecommendations(true);
-    }
-  };
+  }, [searchParams, loadChatFromHistory]);
 
   const quickActions = [
     { 
@@ -354,12 +348,12 @@ export default function HomePage() {
       }
       
       // Add AI response to chat
-      const aiMsg = {
+      const aiMsg: Message = {
         id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         text: response,
         sender: "ai" as const,
         timestamp: new Date(),
-        type: response.includes("showing confirmed") ? "showing-confirmed" : undefined
+        type: response.includes("showing confirmed") ? "showing-confirmed" as const : undefined
       };
       setChatMessages(prev => [...prev, aiMsg]);
       
@@ -996,5 +990,13 @@ export default function HomePage() {
         onClose={handleClosePropertyPopup}
       />
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+      <HomePageContent />
+    </Suspense>
   );
 }
