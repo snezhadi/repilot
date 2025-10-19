@@ -20,17 +20,34 @@ interface CustomSidebarProps {
   className?: string;
   activePage?: 'home' | 'chat-history' | 'watchlist' | 'showings' | 'messaging' | 'profile';
   onHomeClick?: () => void;
+  mode?: 'client' | 'agent';
 }
 
-export function CustomSidebar({ className = '', activePage = 'home', onHomeClick }: CustomSidebarProps) {
+export function CustomSidebar({ className = '', activePage = 'home', onHomeClick, mode = 'client' }: CustomSidebarProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const menuItems = [
-    { icon: Home, label: 'Home', isActive: activePage === 'home' },
-    { icon: History, label: 'Chat History', isActive: activePage === 'chat-history' },
-    { icon: Heart, label: 'Watchlist', isActive: activePage === 'watchlist' },
-    { icon: Eye, label: 'Showings', isActive: activePage === 'showings' },
-    { icon: MessageSquare, label: 'Messaging', isActive: activePage === 'messaging' },
-  ];
+  
+  // Agent mode: only Home and Chat History
+  // Client mode: all menu items
+  const menuItems = mode === 'agent' 
+    ? [
+        { icon: Home, label: 'Home', isActive: activePage === 'home', href: '/agent' },
+        { icon: History, label: 'Chat History', isActive: activePage === 'chat-history', href: '/agent/chat-history' },
+      ]
+    : [
+        { icon: Home, label: 'Home', isActive: activePage === 'home', href: '/' },
+        { icon: History, label: 'Chat History', isActive: activePage === 'chat-history', href: '/chat-history' },
+        { icon: Heart, label: 'Watchlist', isActive: activePage === 'watchlist', href: '/watchlist' },
+        { icon: Eye, label: 'Showings', isActive: activePage === 'showings', href: '/showings' },
+        { icon: MessageSquare, label: 'Messaging', isActive: activePage === 'messaging', href: '/messaging' },
+      ];
+  
+  // Different avatars for agent vs client
+  const avatarSrc = mode === 'agent' 
+    ? "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face" 
+    : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face";
+  
+  const userName = mode === 'agent' ? 'Sarah Johnson' : 'Alex Johnson';
+  const userEmail = mode === 'agent' ? 'sarah.johnson@email.com' : 'alex.johnson@email.com';
 
   return (
     <div className={`fixed left-0 top-0 h-full w-16 bg-background border-r border-border ${className}`}>
@@ -40,81 +57,11 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
           <TooltipProvider key={index}>
             <Tooltip>
               <TooltipTrigger asChild>
-                {item.label === 'Home' ? (
-                  <Link href="/" onClick={(e) => {
-                    if (onHomeClick) {
-                      onHomeClick();
-                    }
-                  }}>
-                    <button
-                      className={`
-                        w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
-                        ${item.isActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }
-                      `}
-                    >
-                      <item.icon className="w-6 h-6" />
-                    </button>
-                  </Link>
-                ) : item.label === 'Chat History' ? (
-                  <Link href="/chat-history">
-                    <button
-                      className={`
-                        w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
-                        ${item.isActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }
-                      `}
-                    >
-                      <item.icon className="w-6 h-6" />
-                    </button>
-                  </Link>
-                ) : item.label === 'Watchlist' ? (
-                  <Link href="/watchlist">
-                    <button
-                      className={`
-                        w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
-                        ${item.isActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }
-                      `}
-                    >
-                      <item.icon className="w-6 h-6" />
-                    </button>
-                  </Link>
-                ) : item.label === 'Showings' ? (
-                  <Link href="/showings">
-                    <button
-                      className={`
-                        w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
-                        ${item.isActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }
-                      `}
-                    >
-                      <item.icon className="w-6 h-6" />
-                    </button>
-                  </Link>
-                ) : item.label === 'Messaging' ? (
-                  <Link href="/messaging">
-                    <button
-                      className={`
-                        w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
-                        ${item.isActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }
-                      `}
-                    >
-                      <item.icon className="w-6 h-6" />
-                    </button>
-                  </Link>
-                ) : (
+                <Link href={item.href} onClick={(e) => {
+                  if (item.label === 'Home' && onHomeClick) {
+                    onHomeClick();
+                  }
+                }}>
                   <button
                     className={`
                       w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200
@@ -126,7 +73,7 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
                   >
                     <item.icon className="w-6 h-6" />
                   </button>
-                )}
+                </Link>
               </TooltipTrigger>
               <TooltipContent side="right">
                 <p>{item.label}</p>
@@ -145,7 +92,7 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
                 <DropdownMenuTrigger asChild>
                   <button className="w-12 h-12 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 overflow-hidden">
                     <Avatar className="w-8 h-8">
-                      <AvatarImage src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face" alt="User Profile" />
+                      <AvatarImage src={avatarSrc} alt="User Profile" />
                       <AvatarFallback className="bg-muted">
                         <User className="w-4 h-4" />
                       </AvatarFallback>
@@ -171,8 +118,8 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
             </TooltipTrigger>
             <TooltipContent side="right">
               <div className="text-center">
-                <p className="font-medium">Alex Johnson</p>
-                <p className="text-xs text-muted-foreground">alex.johnson@email.com</p>
+                <p className="font-medium">{userName}</p>
+                <p className="text-xs text-muted-foreground">{userEmail}</p>
               </div>
             </TooltipContent>
           </Tooltip>
