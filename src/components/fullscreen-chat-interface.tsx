@@ -43,6 +43,7 @@ interface FullscreenChatInterfaceProps {
   onRecommendationClick?: (propertySet?: "default" | "richmond-detached" | "richmond-townhouses") => void;
   recommendedProperties?: Property[];
   onPropertyClick?: (propertyId: string) => void;
+  userAvatar?: string;
 }
 
 export function FullscreenChatInterface({ 
@@ -57,7 +58,8 @@ export function FullscreenChatInterface({
   onShowRecommendations,
   onRecommendationClick,
   recommendedProperties = [],
-  onPropertyClick
+  onPropertyClick,
+  userAvatar = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
 }: FullscreenChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -253,7 +255,7 @@ export function FullscreenChatInterface({
                 {message.sender === "ai" ? (
                   <AvatarImage src="/ai_avatar.png" alt="AI Assistant" className="w-full h-full object-cover" />
                 ) : (
-                  <AvatarImage src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face" alt="User" />
+                  <AvatarImage src={userAvatar} alt="User" />
                 )}
               </Avatar>
               <Card className={`${message.sender === "user" ? "bg-gray-100 text-gray-900" : "bg-background"} max-w-full !py-3 border-0`}>

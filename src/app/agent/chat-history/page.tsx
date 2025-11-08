@@ -80,17 +80,21 @@ export default function AgentChatHistoryPage() {
     <div className="flex h-screen bg-background">
       <CustomSidebar activePage="chat-history" mode="agent" />
       
+      {/* Agent Portal Badge */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 px-3 py-1">
+          Agent Portal
+        </Badge>
+      </div>
+      
       <div className="flex-1 ml-16">
         {/* Header */}
         <div className="border-b border-border bg-card">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">Chat History</h1>
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                  Agent Portal
-                </Badge>
-              </div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">Chat History</h1>
+            </div>
               <Badge variant="secondary" className="text-sm">
                 {filteredChats.length} Conversations
               </Badge>

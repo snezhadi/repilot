@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, History, Heart, MessageSquare, Eye, User, Settings, LogOut } from 'lucide-react';
+import { Home, History, Heart, MessageSquare, Eye, User, Settings, LogOut, Users } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -18,7 +18,7 @@ import Link from "next/link";
 
 interface CustomSidebarProps {
   className?: string;
-  activePage?: 'home' | 'chat-history' | 'watchlist' | 'showings' | 'messaging' | 'profile';
+  activePage?: 'home' | 'chat-history' | 'watchlist' | 'showings' | 'messaging' | 'profile' | 'clients';
   onHomeClick?: () => void;
   mode?: 'client' | 'agent';
 }
@@ -26,12 +26,15 @@ interface CustomSidebarProps {
 export function CustomSidebar({ className = '', activePage = 'home', onHomeClick, mode = 'client' }: CustomSidebarProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   
-  // Agent mode: only Home and Chat History
-  // Client mode: all menu items
+  // Agent mode and Client mode have the same menu items, just different routes
   const menuItems = mode === 'agent' 
     ? [
         { icon: Home, label: 'Home', isActive: activePage === 'home', href: '/agent' },
         { icon: History, label: 'Chat History', isActive: activePage === 'chat-history', href: '/agent/chat-history' },
+        { icon: Heart, label: 'Watchlist', isActive: activePage === 'watchlist', href: '/agent/watchlist' },
+        { icon: Eye, label: 'Showings', isActive: activePage === 'showings', href: '/agent/showings' },
+        { icon: MessageSquare, label: 'Messaging', isActive: activePage === 'messaging', href: '/agent/messaging' },
+        { icon: Users, label: 'Clients', isActive: activePage === 'clients', href: '/agent/clients' },
       ]
     : [
         { icon: Home, label: 'Home', isActive: activePage === 'home', href: '/' },
