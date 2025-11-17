@@ -401,7 +401,7 @@ export default function AgentClientsPage() {
                           asChild
                         >
                           <Link href={`/agent/clients/${client.id}`}>
-                            View Timeline
+                            Details and Timeframe
                           </Link>
                         </Button>
                         <Button

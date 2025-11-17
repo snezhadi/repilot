@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { PropertyDetailsPopup } from "@/components/property-details-popup";
 import { INITIAL_AGENT_CLIENTS } from "@/data/agent-clients";
 
 interface Message {

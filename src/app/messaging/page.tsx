@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Send, Mic, Eye, Bed, Bath, Square, Car, MapPin, Heart, Share2, Calendar, Phone } from 'lucide-react';
+import { ArrowLeft, Send, Mic, Eye, Bed, Bath, Square, Car, MapPin, Heart, Share2, Calendar, Phone, FileText, PenTool } from 'lucide-react';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PropertyDetailsPopup } from '@/components/property-details-popup';
@@ -17,7 +18,8 @@ interface Message {
   text: string;
   sender: "user" | "agent";
   timestamp: Date;
-  type?: "text" | "thinking" | "recommendations" | "showing-slots" | "showing-confirmed";
+  type?: "text" | "thinking" | "recommendations" | "showing-slots" | "showing-confirmed" | "offer-review";
+  offerId?: string;
   propertySet?: "default" | "richmond-detached" | "richmond-townhouses";
 }
 
@@ -162,6 +164,14 @@ export default function MessagingPage() {
         sender: "agent",
         timestamp: new Date(Date.now() - 1000 * 60 * 2), // 2 minutes ago
         type: "showing-slots"
+      },
+      {
+        id: "8",
+        text: "Great news! I've prepared an offer for 88 Bayview Heights Dr. Please review the terms and sign when ready.",
+        sender: "agent",
+        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+        type: "offer-review",
+        offerId: "offer-aj-01"
       }
     ];
 
@@ -347,6 +357,28 @@ export default function MessagingPage() {
                           <p className="text-sm font-medium text-green-700">{message.text}</p>
                         </div>
                       </div>
+                    ) : message.type === "offer-review" ? (
+                      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 max-w-md">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                            <p className="font-semibold text-sm">New Offer Ready for Review</p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{message.text}</p>
+                          <div className="flex gap-2">
+                            <Button size="sm" asChild className="gap-1">
+                              <Link href={`/offer/${message.offerId || 'offer-aj-01'}/sign`}>
+                                <PenTool className="w-3 h-3" /> Review & Sign
+                              </Link>
+                            </Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`/offer/${message.offerId || 'offer-aj-01'}/status`}>
+                                Track Status
+                              </Link>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ) : (
                       <div className="text-sm break-words prose prose-sm max-w-none [&_p]:mb-3 [&_ul]:mb-3 [&_li]:mb-1 [&_table]:border-collapse [&_table]:w-full [&_th]:border [&_th]:border-gray-300 [&_th]:px-3 [&_th]:py-2 [&_th]:bg-gray-50 [&_th]:text-left [&_th]:font-semibold [&_td]:border [&_td]:border-gray-300 [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>

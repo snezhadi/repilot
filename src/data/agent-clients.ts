@@ -21,6 +21,10 @@ export interface AgentClient {
   latestCriteria?: ClientCriteriaSnapshot;
   aiInstructions?: string;
   notes?: ClientNote[];
+  kycReport?: KYCReport;
+  crmAutomation?: CRMAutomation;
+  purchaseDate?: Date; // For anniversary tracking
+  currentPropertyValue?: number; // For market value alerts
 }
 
 export type TimelineEventType = 'criteria-change' | 'showing' | 'milestone';
@@ -45,6 +49,33 @@ export interface ClientCriteriaSnapshot {
   propertyTypes?: string[];
   preferredAreas?: string[];
   notes?: string;
+}
+
+export type KYCStatus = 'not-started' | 'in-progress' | 'completed' | 'requires-review';
+
+export interface KYCReport {
+  id: string;
+  status: KYCStatus;
+  lastChecked?: Date;
+  provider?: string;
+  riskLevel?: 'low' | 'medium' | 'high';
+  identityVerified?: boolean;
+  addressVerified?: boolean;
+  riskFlags?: {
+    type: 'sanctions' | 'pep' | 'adverse-media' | 'financial';
+    description: string;
+    severity: 'low' | 'medium' | 'high';
+  }[];
+}
+
+export interface CRMAutomation {
+  birthdayReminders: boolean;
+  purchaseAnniversary: boolean;
+  marketValueAlerts: boolean;
+  marketValueThreshold?: number; // percentage
+  quarterlyInsights: boolean;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
 }
 
 export const INITIAL_AGENT_CLIENTS: AgentClient[] = [
@@ -79,7 +110,26 @@ export const INITIAL_AGENT_CLIENTS: AgentClient[] = [
         createdAt: new Date("2024-01-18T21:45:00"),
         updatedAt: new Date("2024-01-18T21:45:00"),
       },
-    ]
+    ],
+    kycReport: {
+      id: "kyc-alex-1",
+      status: 'completed',
+      lastChecked: new Date('2024-01-10'),
+      provider: 'GlobalWatchlist v1.2',
+      riskLevel: 'low',
+      identityVerified: true,
+      addressVerified: true,
+      riskFlags: []
+    },
+    crmAutomation: {
+      birthdayReminders: true,
+      purchaseAnniversary: false,
+      marketValueAlerts: true,
+      marketValueThreshold: 10,
+      quarterlyInsights: true,
+      emailEnabled: true,
+      smsEnabled: false
+    }
   },
   {
     id: "client-2",
@@ -105,7 +155,22 @@ export const INITIAL_AGENT_CLIENTS: AgentClient[] = [
         createdAt: new Date("2024-01-05T11:30:00"),
         updatedAt: new Date("2024-01-05T11:30:00"),
       }
-    ]
+    ],
+    kycReport: {
+      id: "kyc-sarah-1",
+      status: 'not-started',
+    },
+    crmAutomation: {
+      birthdayReminders: true,
+      purchaseAnniversary: true,
+      marketValueAlerts: true,
+      marketValueThreshold: 15,
+      quarterlyInsights: true,
+      emailEnabled: true,
+      smsEnabled: true
+    },
+    purchaseDate: new Date('2023-06-15'),
+    currentPropertyValue: 1850000
   },
   {
     id: "client-3",

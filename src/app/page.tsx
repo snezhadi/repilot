@@ -4,6 +4,9 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Search, 
   Mic, 
@@ -11,8 +14,12 @@ import {
   Heart,
   FileText,
   BarChart3,
-  ShoppingBag
+  ShoppingBag,
+  PenTool,
+  Shield,
+  AlertCircle
 } from "lucide-react";
+import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { CustomSidebar } from "@/components/custom-sidebar";
 import { PropertyCard } from "@/components/property-card";
@@ -62,6 +69,7 @@ function HomePageContent() {
   const [isResizing, setIsResizing] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isPropertyPopupOpen, setIsPropertyPopupOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   // Function to load chat from history
@@ -856,7 +864,7 @@ function HomePageContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Custom Sidebar */}
-      <CustomSidebar activePage="home" onHomeClick={clearState} />
+      <CustomSidebar activePage="home" onHomeClick={clearState} onNotificationClick={() => setIsNotificationOpen(true)} />
 
       {/* Main Content */}
       <div 
@@ -989,6 +997,56 @@ function HomePageContent() {
         isOpen={isPropertyPopupOpen}
         onClose={handleClosePropertyPopup}
       />
+
+      {/* Notifications Dialog */}
+      <Dialog open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Notifications</DialogTitle>
+            <DialogDescription>
+              You have pending actions that require your attention
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            <Link href="/offer/offer-aj-01/sign" className="block" onClick={() => setIsNotificationOpen(false)}>
+              <Card className="bg-blue-50/50 border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <PenTool className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">Review Offer</p>
+                      <p className="text-xs text-muted-foreground">88 Bayview Heights Dr</p>
+                    </div>
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                      Pending
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/kyc-invite/test-token" className="block" onClick={() => setIsNotificationOpen(false)}>
+              <Card className="bg-purple-50/50 border-purple-200 hover:bg-purple-100 transition-colors cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">Complete Verification</p>
+                      <p className="text-xs text-muted-foreground">Identity verification requested</p>
+                    </div>
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                      Required
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

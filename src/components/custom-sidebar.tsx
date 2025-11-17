@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import { Home, History, Heart, MessageSquare, Eye, User, Settings, LogOut, Users } from 'lucide-react';
+import { Home, History, Heart, MessageSquare, Eye, User, Settings, LogOut, Users, BriefcaseBusiness, Bell } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -18,12 +20,13 @@ import Link from "next/link";
 
 interface CustomSidebarProps {
   className?: string;
-  activePage?: 'home' | 'chat-history' | 'watchlist' | 'showings' | 'messaging' | 'profile' | 'clients';
+  activePage?: 'home' | 'chat-history' | 'watchlist' | 'showings' | 'offers' | 'closing' | 'messaging' | 'profile' | 'clients';
   onHomeClick?: () => void;
+  onNotificationClick?: () => void;
   mode?: 'client' | 'agent';
 }
 
-export function CustomSidebar({ className = '', activePage = 'home', onHomeClick, mode = 'client' }: CustomSidebarProps) {
+export function CustomSidebar({ className = '', activePage = 'home', onHomeClick, onNotificationClick, mode = 'client' }: CustomSidebarProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   
   // Agent mode and Client mode have the same menu items, just different routes
@@ -33,6 +36,7 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
         { icon: History, label: 'Chat History', isActive: activePage === 'chat-history', href: '/agent/chat-history' },
         { icon: Heart, label: 'Watchlist', isActive: activePage === 'watchlist', href: '/agent/watchlist' },
         { icon: Eye, label: 'Showings', isActive: activePage === 'showings', href: '/agent/showings' },
+        { icon: BriefcaseBusiness, label: 'Offers', isActive: activePage === 'offers', href: '/agent/offers' },
         { icon: MessageSquare, label: 'Messaging', isActive: activePage === 'messaging', href: '/agent/messaging' },
         { icon: Users, label: 'Clients', isActive: activePage === 'clients', href: '/agent/clients' },
       ]
@@ -86,6 +90,35 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
         ))}
       </div>
 
+      {/* Notification Bell */}
+      <div className="absolute bottom-20 left-0 right-0 flex justify-center">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {onNotificationClick ? (
+                <button 
+                  onClick={onNotificationClick}
+                  className="w-12 h-12 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 relative"
+                >
+                  <Bell className="w-6 h-6" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+              ) : (
+                <Link href={mode === 'client' ? "/#notifications" : "/agent#notifications"}>
+                  <button className="w-12 h-12 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 relative">
+                    <Bell className="w-6 h-6" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  </button>
+                </Link>
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Notifications</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
       {/* Profile Button at Bottom */}
       <div className="absolute bottom-4 left-0 right-0 flex justify-center">
         <TooltipProvider>
@@ -107,10 +140,20 @@ export function CustomSidebar({ className = '', activePage = 'home', onHomeClick
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
+                  {mode === 'client' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/preferences">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Preferences</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {mode === 'agent' && (
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
                     <LogOut className="mr-2 h-4 w-4" />

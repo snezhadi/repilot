@@ -12,8 +12,15 @@ import {
   agentClientTimelines,
   INITIAL_AGENT_CLIENTS,
   TimelineEvent,
-  AgentClient
+  AgentClient,
+  KYCStatus,
+  CRMAutomation
 } from "@/data/agent-clients";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
   Calendar,
@@ -22,7 +29,20 @@ import {
   Pause,
   CheckCircle,
   AlertCircle,
-  XCircle
+  XCircle,
+  Shield,
+  FileCheck,
+  AlertTriangle,
+  CheckCircle2,
+  X,
+  Bell,
+  BellOff,
+  TrendingUp,
+  Gift,
+  Mail as MailIcon,
+  MessageSquare,
+  Send,
+  Copy
 } from "lucide-react";
 
 const getStatusBadge = (status: AgentClient["status"]) => {
@@ -104,8 +124,14 @@ export default function AgentClientTimelinePage() {
   const params = useParams<{ clientId: string }>();
   const clientId = Array.isArray(params?.clientId) ? params.clientId[0] : params?.clientId;
 
-  const client = INITIAL_AGENT_CLIENTS.find((item) => item.id === clientId) ?? null;
+  const [clients, setClients] = useState<AgentClient[]>(INITIAL_AGENT_CLIENTS);
+  const client = clients.find((item) => item.id === clientId) ?? null;
   const timelineEvents = clientId ? agentClientTimelines[clientId] ?? [] : [];
+  const [isKYCReportOpen, setIsKYCReportOpen] = useState(false);
+  const [isCRMDialogOpen, setIsCRMDialogOpen] = useState(false);
+  const [isRunningKYC, setIsRunningKYC] = useState(false);
+  const [isKYCInviteOpen, setIsKYCInviteOpen] = useState(false);
+  const [kycInviteLink, setKycInviteLink] = useState("");
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -219,6 +245,234 @@ export default function AgentClientTimelinePage() {
                 </CardContent>
               </Card>
 
+              <div className="flex items-center gap-2 mt-2">
+                <Button size="sm" className="bg-primary text-primary-foreground" asChild>
+                  <Link href={`/agent/clients/${client.id}`}>Overview</Link>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1" asChild>
+                  <Link href={`/agent/offers?clientId=${client.id}`}>Offers workspace</Link>
+                </Button>
+              </div>
+
+              {/* KYC Section */}
+              <Card className="border-border/80">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-muted-foreground" />
+                      <h2 className="text-lg font-semibold">KYC Verification</h2>
+                    </div>
+                    {client.kycReport?.status === 'not-started' && (
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          setIsRunningKYC(true);
+                          await new Promise(resolve => setTimeout(resolve, 2000));
+                          setClients(prev => prev.map(c => 
+                            c.id === client.id 
+                              ? {
+                                  ...c,
+                                  kycReport: {
+                                    id: `kyc-${c.id}-${Date.now()}`,
+                                    status: 'in-progress',
+                                    lastChecked: new Date(),
+                                    provider: 'GlobalWatchlist v1.2'
+                                  }
+                                }
+                              : c
+                          ));
+                          setIsRunningKYC(false);
+                        }}
+                        disabled={isRunningKYC}
+                      >
+                        {isRunningKYC ? "Running check..." : "Run KYC Check"}
+                      </Button>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const token = `kyc-${client.id}-${Date.now()}`;
+                          const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/kyc-invite/${token}`;
+                          setKycInviteLink(link);
+                          setIsKYCInviteOpen(true);
+                        }}
+                        className="gap-1"
+                      >
+                        <Send className="w-3 h-3" /> Send Invite
+                      </Button>
+                      {client.kycReport && client.kycReport.status !== 'not-started' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsKYCReportOpen(true)}
+                        >
+                          View Report
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {!client.kycReport || client.kycReport.status === 'not-started' ? (
+                    <div className="text-sm text-muted-foreground">
+                      <p>KYC verification has not been performed for this client.</p>
+                      <p className="mt-1">Run a check to verify identity, address, and screen for risk flags.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Status:</span>
+                        <Badge
+                          className={
+                            client.kycReport.status === 'completed'
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : client.kycReport.status === 'requires-review'
+                              ? "bg-red-100 text-red-800 border-red-200"
+                              : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                          }
+                        >
+                          {client.kycReport.status === 'completed' ? 'Completed' :
+                           client.kycReport.status === 'requires-review' ? 'Requires Review' :
+                           'In Progress'}
+                        </Badge>
+                        {client.kycReport.riskLevel && (
+                          <Badge
+                            variant="outline"
+                            className={
+                              client.kycReport.riskLevel === 'low'
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : client.kycReport.riskLevel === 'high'
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                            }
+                          >
+                            Risk: {client.kycReport.riskLevel}
+                          </Badge>
+                        )}
+                      </div>
+                      {client.kycReport.lastChecked && (
+                        <div className="text-sm text-muted-foreground">
+                          Last checked: {formatDate(client.kycReport.lastChecked)}
+                          {client.kycReport.provider && ` • ${client.kycReport.provider}`}
+                        </div>
+                      )}
+                      {client.kycReport.identityVerified !== undefined && (
+                        <div className="flex items-center gap-2 text-sm">
+                          {client.kycReport.identityVerified ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-600" />
+                          )}
+                          <span>Identity {client.kycReport.identityVerified ? 'Verified' : 'Not Verified'}</span>
+                        </div>
+                      )}
+                      {client.kycReport.addressVerified !== undefined && (
+                        <div className="flex items-center gap-2 text-sm">
+                          {client.kycReport.addressVerified ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-600" />
+                          )}
+                          <span>Address {client.kycReport.addressVerified ? 'Verified' : 'Not Verified'}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* CRM Automation Section */}
+              <Card className="border-border/80">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-5 h-5 text-muted-foreground" />
+                      <h2 className="text-lg font-semibold">CRM Automation</h2>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        asChild
+                      >
+                        <Link href={`/preferences?from=agent&clientId=${client.id}`}>
+                          Client Preferences
+                        </Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsCRMDialogOpen(true)}
+                      >
+                        Configure
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {client.crmAutomation ? (
+                    <div className="space-y-3">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          {client.crmAutomation.birthdayReminders ? (
+                            <Gift className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <BellOff className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span>Birthday reminders</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {client.crmAutomation.purchaseAnniversary ? (
+                            <Calendar className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <BellOff className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span>Purchase anniversary</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {client.crmAutomation.marketValueAlerts ? (
+                            <TrendingUp className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <BellOff className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span>Market value alerts {client.crmAutomation.marketValueThreshold && `(${client.crmAutomation.marketValueThreshold}% threshold)`}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {client.crmAutomation.quarterlyInsights ? (
+                            <FileCheck className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <BellOff className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span>Quarterly insights</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t border-border/60">
+                        <div className="flex items-center gap-1">
+                          {client.crmAutomation.emailEnabled ? (
+                            <MailIcon className="w-3 h-3" />
+                          ) : (
+                            <X className="w-3 h-3" />
+                          )}
+                          <span>Email</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {client.crmAutomation.smsEnabled ? (
+                            <MessageSquare className="w-3 h-3" />
+                          ) : (
+                            <X className="w-3 h-3" />
+                          )}
+                          <span>SMS</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      <p>No automation configured. Set up automated touchpoints to maintain client relationships.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card className="border-border/80">
                 <CardContent className="p-6">
                   <div className="mb-6">
@@ -325,6 +579,406 @@ export default function AgentClientTimelinePage() {
           )}
         </div>
       </div>
+
+      {/* KYC Report Dialog */}
+      <Dialog open={isKYCReportOpen} onOpenChange={setIsKYCReportOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>KYC Verification Report</DialogTitle>
+            <DialogDescription>
+              Complete verification details for {client?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 overflow-y-auto pr-2 max-h-[60vh]">
+            {client?.kycReport && (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Card>
+                    <CardContent className="p-4 space-y-2">
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Identity Verification</p>
+                      <div className="flex items-center gap-2">
+                        {client.kycReport.identityVerified ? (
+                          <>
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <span className="font-semibold text-green-700">Verified</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-5 h-5 text-red-600" />
+                            <span className="font-semibold text-red-700">Not Verified</span>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Government-issued ID confirmed</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 space-y-2">
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Address Verification</p>
+                      <div className="flex items-center gap-2">
+                        {client.kycReport.addressVerified ? (
+                          <>
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <span className="font-semibold text-green-700">Verified</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-5 h-5 text-red-600" />
+                            <span className="font-semibold text-red-700">Not Verified</span>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Residential address confirmed</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {client.kycReport.riskFlags && client.kycReport.riskFlags.length > 0 ? (
+                  <Card>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                        <p className="font-semibold">Risk Flags</p>
+                      </div>
+                      <div className="space-y-2">
+                        {client.kycReport.riskFlags.map((flag, idx) => (
+                          <div key={idx} className="flex items-start gap-2 p-2 bg-muted/50 rounded-md">
+                            <Badge
+                              variant="outline"
+                              className={
+                                flag.severity === 'high'
+                                  ? "bg-red-50 text-red-700 border-red-200"
+                                  : flag.severity === 'medium'
+                                  ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                  : "bg-blue-50 text-blue-700 border-blue-200"
+                              }
+                            >
+                              {flag.type}
+                            </Badge>
+                            <span className="text-sm flex-1">{flag.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span className="font-semibold">No risk flags detected</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {client.kycReport.lastChecked && (
+                  <div className="text-sm text-muted-foreground">
+                    <p>Last checked: {formatDate(client.kycReport.lastChecked)}</p>
+                    {client.kycReport.provider && <p>Provider: {client.kycReport.provider}</p>}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsKYCReportOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CRM Configuration Dialog */}
+      <Dialog open={isCRMDialogOpen} onOpenChange={setIsCRMDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Configure CRM Automation</DialogTitle>
+            <DialogDescription>
+              Set up automated touchpoints for {client?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="birthday">Birthday Reminders</Label>
+                  <p className="text-xs text-muted-foreground">Send birthday greetings automatically</p>
+                </div>
+                <Switch
+                  id="birthday"
+                  checked={client?.crmAutomation?.birthdayReminders ?? false}
+                  onCheckedChange={(checked) => {
+                    setClients(prev => prev.map(c =>
+                      c.id === client?.id
+                        ? {
+                            ...c,
+                            crmAutomation: {
+                              ...(c.crmAutomation || {
+                                birthdayReminders: false,
+                                purchaseAnniversary: false,
+                                marketValueAlerts: false,
+                                quarterlyInsights: false,
+                                emailEnabled: true,
+                                smsEnabled: false
+                              }),
+                              birthdayReminders: checked
+                            }
+                          }
+                        : c
+                    ));
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="anniversary">Purchase Anniversary</Label>
+                  <p className="text-xs text-muted-foreground">Celebrate purchase milestones</p>
+                </div>
+                <Switch
+                  id="anniversary"
+                  checked={client?.crmAutomation?.purchaseAnniversary ?? false}
+                  onCheckedChange={(checked) => {
+                    setClients(prev => prev.map(c =>
+                      c.id === client?.id
+                        ? {
+                            ...c,
+                            crmAutomation: {
+                              ...(c.crmAutomation || {
+                                birthdayReminders: false,
+                                purchaseAnniversary: false,
+                                marketValueAlerts: false,
+                                quarterlyInsights: false,
+                                emailEnabled: true,
+                                smsEnabled: false
+                              }),
+                              purchaseAnniversary: checked
+                            }
+                          }
+                        : c
+                    ));
+                  }}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="market-alerts">Market Value Alerts</Label>
+                    <p className="text-xs text-muted-foreground">Notify when property value changes significantly</p>
+                  </div>
+                  <Switch
+                    id="market-alerts"
+                    checked={client?.crmAutomation?.marketValueAlerts ?? false}
+                    onCheckedChange={(checked) => {
+                      setClients(prev => prev.map(c =>
+                        c.id === client?.id
+                          ? {
+                              ...c,
+                              crmAutomation: {
+                                ...(c.crmAutomation || {
+                                  birthdayReminders: false,
+                                  purchaseAnniversary: false,
+                                  marketValueAlerts: false,
+                                  quarterlyInsights: false,
+                                  emailEnabled: true,
+                                  smsEnabled: false
+                                }),
+                                marketValueAlerts: checked
+                              }
+                            }
+                          : c
+                      ));
+                    }}
+                  />
+                </div>
+                {client?.crmAutomation?.marketValueAlerts && (
+                  <div className="pl-4">
+                    <Label htmlFor="threshold" className="text-xs">Alert Threshold (%)</Label>
+                    <Input
+                      id="threshold"
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={client.crmAutomation.marketValueThreshold || 10}
+                      onChange={(e) => {
+                        setClients(prev => prev.map(c =>
+                          c.id === client?.id
+                            ? {
+                                ...c,
+                                crmAutomation: {
+                                  ...(c.crmAutomation || {
+                                    birthdayReminders: false,
+                                    purchaseAnniversary: false,
+                                    marketValueAlerts: false,
+                                    quarterlyInsights: false,
+                                    emailEnabled: true,
+                                    smsEnabled: false
+                                  }),
+                                  marketValueThreshold: parseInt(e.target.value) || 10
+                                }
+                              }
+                            : c
+                        ));
+                      }}
+                      className="mt-1 w-24"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="insights">Quarterly Market Insights</Label>
+                  <p className="text-xs text-muted-foreground">Send quarterly market analysis</p>
+                </div>
+                <Switch
+                  id="insights"
+                  checked={client?.crmAutomation?.quarterlyInsights ?? false}
+                  onCheckedChange={(checked) => {
+                    setClients(prev => prev.map(c =>
+                      c.id === client?.id
+                        ? {
+                            ...c,
+                            crmAutomation: {
+                              ...(c.crmAutomation || {
+                                birthdayReminders: false,
+                                purchaseAnniversary: false,
+                                marketValueAlerts: false,
+                                quarterlyInsights: false,
+                                emailEnabled: true,
+                                smsEnabled: false
+                              }),
+                              quarterlyInsights: checked
+                            }
+                          }
+                        : c
+                    ));
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="text-sm font-medium">Notification Channels</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="email">Email</Label>
+                  <Switch
+                    id="email"
+                    checked={client?.crmAutomation?.emailEnabled ?? true}
+                    onCheckedChange={(checked) => {
+                      setClients(prev => prev.map(c =>
+                        c.id === client?.id
+                          ? {
+                              ...c,
+                              crmAutomation: {
+                                ...(c.crmAutomation || {
+                                  birthdayReminders: false,
+                                  purchaseAnniversary: false,
+                                  marketValueAlerts: false,
+                                  quarterlyInsights: false,
+                                  emailEnabled: true,
+                                  smsEnabled: false
+                                }),
+                                emailEnabled: checked
+                              }
+                            }
+                          : c
+                      ));
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sms">SMS</Label>
+                  <Switch
+                    id="sms"
+                    checked={client?.crmAutomation?.smsEnabled ?? false}
+                    onCheckedChange={(checked) => {
+                      setClients(prev => prev.map(c =>
+                        c.id === client?.id
+                          ? {
+                              ...c,
+                              crmAutomation: {
+                                ...(c.crmAutomation || {
+                                  birthdayReminders: false,
+                                  purchaseAnniversary: false,
+                                  marketValueAlerts: false,
+                                  quarterlyInsights: false,
+                                  emailEnabled: true,
+                                  smsEnabled: false
+                                }),
+                                smsEnabled: checked
+                              }
+                            }
+                          : c
+                      ));
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCRMDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* KYC Invite Dialog */}
+      <Dialog open={isKYCInviteOpen} onOpenChange={setIsKYCInviteOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Send KYC Invite</DialogTitle>
+            <DialogDescription>
+              Send an invite link to {client?.name} to complete their identity verification.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Invite Link</Label>
+              <div className="flex gap-2">
+                <Input value={kycInviteLink} readOnly className="flex-1" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(kycInviteLink);
+                    alert("Link copied to clipboard!");
+                  }}
+                  className="gap-1"
+                >
+                  <Copy className="w-3 h-3" /> Copy
+                </Button>
+              </div>
+            </div>
+            <Card className="bg-blue-50/50 border-blue-200">
+              <CardContent className="p-4">
+                <p className="text-sm text-blue-900">
+                  <strong>Next steps:</strong> Copy this link and send it to the client via email or messaging. They can complete the verification process at their convenience.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsKYCInviteOpen(false)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                alert("Invite sent via email! (In production, this would send an email with the link)");
+                setIsKYCInviteOpen(false);
+              }}
+              className="gap-1"
+            >
+              <MailIcon className="w-3 h-3" /> Send via Email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
