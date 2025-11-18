@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -58,7 +58,7 @@ const statusToneClass = (tone: "default" | "success" | "warning" | "danger" | un
   }
 };
 
-export default function AgentOffersPage() {
+function AgentOffersPageContent() {
   const searchParams = useSearchParams();
   const initialOfferId = searchParams.get("offerId") ?? agentOfferSummaries[0]?.id;
   const [selectedOfferId, setSelectedOfferId] = useState(initialOfferId ?? "");
@@ -112,7 +112,7 @@ export default function AgentOffersPage() {
     if (!insights) return undefined;
     const insightsRecord = insights as unknown as Record<string, unknown>;
     if (insightsRecord.sellerProfile) {
-      return insights as { sellerProfile: { summary: string; notes: string }; strategySteps: string[]; watchItems: string[] };
+      return insights as unknown as { sellerProfile: { summary: string; notes: string }; strategySteps: string[]; watchItems: string[] };
     }
     return {
       sellerProfile: {
@@ -132,10 +132,10 @@ export default function AgentOffersPage() {
       const base = entry as unknown as Record<string, unknown>;
       return {
         id: entry.id,
-        step: base.step ?? `Step ${index + 1}`,
-        title: base.title ?? base.label ?? "Update",
-        summary: base.summary ?? base.description ?? "",
-        timestamp: base.timestamp ?? "",
+        step: String(base.step ?? `Step ${index + 1}`),
+        title: String(base.title ?? base.label ?? "Update"),
+        summary: String(base.summary ?? base.description ?? ""),
+        timestamp: String(base.timestamp ?? ""),
       };
     });
   }, [history]);
@@ -996,5 +996,13 @@ export default function AgentOffersPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function AgentOffersPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+      <AgentOffersPageContent />
+    </Suspense>
   );
 }

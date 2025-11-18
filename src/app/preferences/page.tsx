@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { CustomSidebar } from "@/components/custom-sidebar";
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bell, Mail, MessageSquare, Gift, Calendar, TrendingUp, FileText, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 
-export default function CommunicationPreferencesPage() {
+function CommunicationPreferencesPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const fromAgent = searchParams.get("from") === "agent";
@@ -349,6 +349,14 @@ export default function CommunicationPreferencesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CommunicationPreferencesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+      <CommunicationPreferencesPageContent />
+    </Suspense>
   );
 }
 
