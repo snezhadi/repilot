@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense, useRef as useRefAlias } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +51,7 @@ interface Property {
   aiReason: string;
   isWatched: boolean;
 }
-
+ 
 function HomePageContent() {
   const searchParams = useSearchParams();
   const [inputValue, setInputValue] = useState("");
@@ -61,7 +61,45 @@ function HomePageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [simulationMessages] = useState<Message[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
+  
+  // Update ref when state changes
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+  
+  // Helper function to wait with pause support
+  const waitWithPause = useCallback(async (ms: number) => {
+    const start = Date.now();
+    while (Date.now() - start < ms) {
+      // Check pause state using ref for current value
+      while (isPausedRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  }, []);
+  
+  // Keyboard listener for pause/resume (Spacebar)
+  useEffect(() => {
+    if (!isSimulating) return;
+    
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && (!e.target || ((e.target as HTMLElement)?.tagName !== 'INPUT' && (e.target as HTMLElement)?.tagName !== 'TEXTAREA'))) {
+        e.preventDefault();
+        setIsPaused(prev => {
+          const newValue = !prev;
+          isPausedRef.current = newValue;
+          return newValue;
+        });
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isSimulating]);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [isInChatMode, setIsInChatMode] = useState(false);
   const [, setPropertySet] = useState<'default' | 'richmond-detached' | 'richmond-townhouses'>('default');
@@ -255,6 +293,7 @@ function HomePageContent() {
     setSearchQuery("");
     setChatMessages([]);
     setShowRecommendations(false);
+    setIsPaused(false);
     setIsSimulating(true);
     
     // Start the conversation simulation
@@ -266,11 +305,11 @@ function HomePageContent() {
         // Type out the first message in the main input
         for (let j = 0; j <= userMessage.length; j++) {
           setInputValue(userMessage.substring(0, j));
-          await new Promise(resolve => setTimeout(resolve, 30));
+          await waitWithPause(30);
         }
         
         // Wait a moment, then transition to chat mode
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await waitWithPause(800);
         
         // Start chat mode and add user message
         setIsInChatMode(true);
@@ -287,11 +326,11 @@ function HomePageContent() {
         setInputValue("");
         for (let j = 0; j <= userMessage.length; j++) {
           setInputValue(userMessage.substring(0, j));
-          await new Promise(resolve => setTimeout(resolve, 30));
+          await waitWithPause(30);
         }
         
         // Wait a moment to simulate user reading before pressing Enter
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await waitWithPause(800);
         
         // Add message to chat (simulate pressing Enter)
         const userMsg = {
@@ -307,14 +346,14 @@ function HomePageContent() {
       }
       
       // Wait before AI response
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await waitWithPause(1000);
       
       // Generate and simulate AI response
       await simulateAIResponse(userMessage, i);
       
       // Wait before next user message
       if (i < conversation.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await waitWithPause(1500);
       }
     }
     
@@ -458,7 +497,7 @@ function HomePageContent() {
       
       // Wait between responses (except for the last one)
       if (i < aiResponses.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await waitWithPause(1000);
       }
     }
   };
@@ -521,7 +560,7 @@ function HomePageContent() {
     setChatMessages(prev => [...prev, thinkingMsg]);
     
     // Simulate thinking time
-    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
+    await waitWithPause(2000 + Math.random() * 2000);
     
     // Remove thinking message after delay
     setChatMessages(prev => prev.filter(msg => msg.id !== thinkingMsg.id));
